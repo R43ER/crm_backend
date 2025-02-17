@@ -22,13 +22,18 @@ class DealController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'crm_id'               => 'required|exists:crms,id',
             'responsible_user_id'  => 'required|exists:users,id',
             'company_id'           => 'nullable|exists:companies,id',
             'budget'               => 'nullable|numeric',
             'title'                => 'required|string|max:255',
             'status'               => 'required|string|max:255',
         ]);
+
+        $crmId = auth()->check() ? auth()->user()->crm_id : session()->get('crm_id');
+        if (!$crmId) {
+            return response()->json(['error' => 'CRM не определена'], 400);
+        }
+        $validated['crm_id'] = $crmId;
 
         $deal = Deal::create($validated);
 

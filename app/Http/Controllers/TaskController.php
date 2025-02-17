@@ -22,7 +22,6 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'crm_id'               => 'required|exists:crms,id',
             'responsible_user_id'  => 'required|exists:users,id',
             'contact_id'           => 'nullable|exists:contacts,id',
             'company_id'           => 'nullable|exists:companies,id',
@@ -33,6 +32,12 @@ class TaskController extends Controller
             'execution_start'      => 'nullable|date_format:Y-m-d H:i:s',
             'execution_end'        => 'nullable|date_format:Y-m-d H:i:s',
         ]);
+
+        $crmId = auth()->check() ? auth()->user()->crm_id : session()->get('crm_id');
+        if (!$crmId) {
+            return response()->json(['error' => 'CRM не определена'], 400);
+        }
+        $validated['crm_id'] = $crmId;
 
         $task = Task::create($validated);
 
@@ -59,7 +64,6 @@ class TaskController extends Controller
         $task = Task::findOrFail($id);
 
         $validated = $request->validate([
-            'crm_id'               => 'sometimes|required|exists:crms,id',
             'responsible_user_id'  => 'sometimes|required|exists:users,id',
             'contact_id'           => 'nullable|exists:contacts,id',
             'company_id'           => 'nullable|exists:companies,id',

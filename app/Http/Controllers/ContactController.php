@@ -31,9 +31,12 @@ class ContactController extends Controller
             'company_id' => 'nullable|exists:companies,id'
         ]);
 
-        $crmId = session('crm_id');
-
+        $crmId = auth()->check() ? auth()->user()->crm_id : session()->get('crm_id');
+        if (!$crmId) {
+            return response()->json(['error' => 'CRM не определена'], 400);
+        }
         $validated['crm_id'] = $crmId;
+
         $contact = Contact::create($validated);
 
         return response()->json([

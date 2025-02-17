@@ -16,7 +16,7 @@ class SubdomainMiddleware
 
         $host = $request->getHost(); // Например, company.gavrelets.ru
         $parts = explode('.', $host);
-
+        
         // Проверяем, что есть поддомен (исключая www)
         if (count($parts) > 2 && $parts[0] !== 'www') {
             $subdomain = $parts[0];

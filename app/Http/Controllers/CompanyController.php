@@ -27,8 +27,13 @@ class CompanyController extends Controller
             'email'   => 'required|email|unique:companies,email',
             'web'     => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
-            'crm_id'  => 'required|exists:crms,id',
         ]);
+
+        $crmId = auth()->check() ? auth()->user()->crm_id : session()->get('crm_id');
+        if (!$crmId) {
+            return response()->json(['error' => 'CRM не определена'], 400);
+        }
+        $validated['crm_id'] = $crmId;
 
         $company = Company::create($validated);
 
@@ -60,7 +65,6 @@ class CompanyController extends Controller
             'email'   => 'sometimes|required|email|unique:companies,email,' . $company->id,
             'web'     => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
-            'crm_id'  => 'sometimes|required|exists:crms,id',
         ]);
 
         $company->update($validated);

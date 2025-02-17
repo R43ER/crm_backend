@@ -13,6 +13,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\DealController;
 
 Route::group(['middleware' => ['subdomain']], function () {
+
     // Открытые маршруты для регистрации и логина
     Route::post('/register', [UserController::class, 'register']);
     Route::post('/login', [UserController::class, 'login']);
@@ -20,6 +21,11 @@ Route::group(['middleware' => ['subdomain']], function () {
 
     // Защищенные маршруты, доступные только с валидным API-токеном Sanctum
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [UserController::class, 'logout']);
+
+        // Возвращает профиль текущего аутентифицированного пользователя
+        Route::get('/users', [UserController::class, 'users']);
+
         // Возвращает профиль текущего аутентифицированного пользователя
         Route::get('/profile', [UserController::class, 'profile']);
 

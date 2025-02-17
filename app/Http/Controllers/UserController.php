@@ -10,6 +10,13 @@ use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
+    public function users()
+    {
+
+        $users = User::all();
+        return response()->json($users);
+    }
+
     /**
      * Регистрация нового пользователя.
      * Доступна без аутентификации.
@@ -159,5 +166,11 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Пользователь успешно удалён',
         ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Вы успешно вышли из системы']);
     }
 }
