@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\CRM; // Добавляем импорт модели CRM
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -12,7 +13,6 @@ class UserController extends Controller
 {
     public function users()
     {
-
         $users = User::all();
         return response()->json($users);
     }
@@ -23,26 +23,43 @@ class UserController extends Controller
      */
     public function register(Request $request)
     {
-        // Валидация входящих данных, теперь обязательно crm_id
+        // Валидация данных для создания CRM
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-            'phone'    => 'nullable|string|max:20',
-            'note'     => 'nullable|string',
-            'avatar'   => 'nullable|string',
-            'crm_id'   => 'required|exists:crms,id',
+            'name'      => 'required|string|max:255',
+            'subdomain' => 'required|string|unique:crms,subdomain',
+            'avatar'    => 'nullable|string',
+            'website'   => 'nullable|url',
         ]);
 
-        // Создание пользователя с использованием crm_id
+        // Создаем новую CRM
+        $crm = CRM::create([
+            'name'      => $validated['name'],
+            'subdomain' => $validated['subdomain'],
+            'avatar'    => $validated['avatar'],
+            'website'   => $validated['website']
+        ]);
+
+        // Валидация данных для создания пользователя
+        $validated = $request->validate([
+            'user_name'     => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'password'      => 'required|string|min:6|confirmed',
+            'phone'         => 'nullable|string|max:20',
+            'note'          => 'nullable|string',
+            'user_avatar'   => 'nullable|string',
+        ]);
+
+        $validated['crm_id'] = $crm->id;
+
+        // Создаем пользователя, связанного с CRM
         $user = User::create([
-            'name'     => $validated['name'],
+            'name'     => $validated['user_name'],
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
             'phone'    => $validated['phone'] ?? null,
             'note'     => $validated['note'] ?? null,
-            'avatar'   => $validated['avatar'] ?? null,
-            'crm_id'   => $validated['crm_id'],
+            'avatar'   => $validated['user_avatar'] ?? null,
+            'crm_id'   => $validated['crm_id']
         ]);
 
         // Выдаем токен через Sanctum
@@ -104,8 +121,12 @@ class UserController extends Controller
             'phone'    => 'nullable|string|max:20',
             'note'     => 'nullable|string',
             'avatar'   => 'nullable|string',
-            'crm_id'   => 'required|exists:crms,id',
         ]);
+        $crmId = auth()->check() ? auth()->user()->crm_id : session()->get('crm_id');
+        if (!$crmId) {
+            return response()->json(['error' => 'CRM не определена'], 400);
+        }
+        $validated['crm_id'] = $crmId;
 
         $user = User::create([
             'name'     => $validated['name'],
@@ -138,10 +159,8 @@ class UserController extends Controller
             'phone'    => 'nullable|string|max:20',
             'note'     => 'nullable|string',
             'avatar'   => 'nullable|string',
-            'crm_id'   => 'sometimes|required|exists:crms,id',
         ]);
 
-        // Если передан пароль, хешируем его
         if (isset($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         }
